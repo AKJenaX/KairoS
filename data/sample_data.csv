@@ -1,0 +1,4 @@
+store,city,current_load,distance_km,inventory_units
+Store A,Bengaluru,65,2,50
+Store B,Bengaluru,40,4,85
+Store C,Bengaluru,30,6,60
