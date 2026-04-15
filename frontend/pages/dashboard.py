@@ -124,8 +124,10 @@ def render_page() -> None:
     render_alert_and_hero()
 
     if run_clicked:
-        with st.spinner("Running full simulation across all agents..."):
-            st.success("Simulation completed. Agent cards updated with the latest outputs.")
+        st.markdown(
+            "<div class='feedback-banner'>Simulation completed. Agent cards updated with the latest outputs.</div>",
+            unsafe_allow_html=True,
+        )
 
     top_row = st.columns(3, gap="medium")
     bottom_row = st.columns(3, gap="medium")
@@ -138,21 +140,20 @@ def render_page() -> None:
             festival = st.checkbox("Festival Multiplier Active", key="festival_dashboard")
             social_trend = st.slider("Social Sentiment Trend", 0, 100, 60, key="social_dashboard")
             if st.button("Predict Demand", use_container_width=True, key="predict_demand_btn"):
-                with st.spinner("Evaluating demand signals..."):
-                    result = api_post("/predict-demand", {"rainfall": weather_to_rainfall(weather), "festival": festival})
-                    demand_level = result["demand_level"]
-                    confidence = min(98, 58 + social_trend // 2 + (12 if festival else 0))
-                    recommendation = {
-                        "HIGH": "Monsoon approach triggering increased demand for perishables.",
-                        "MEDIUM": "Demand is rising. Review fast-moving inventory positions.",
-                        "LOW": "Demand stable. Continue normal fulfillment planning.",
-                    }[demand_level]
-                    st.session_state.dashboard_outputs["demand"] = {
-                        "level": demand_level,
-                        "confidence": confidence,
-                        "recommendation": recommendation,
-                    }
-                    set_global_status("ACTIVE" if demand_level != "HIGH" else "ACTIVE", st.session_state.global_metrics["scenario"], 6)
+                result = api_post("/predict-demand", {"rainfall": weather_to_rainfall(weather), "festival": festival})
+                demand_level = result["demand_level"]
+                confidence = min(98, 58 + social_trend // 2 + (12 if festival else 0))
+                recommendation = {
+                    "HIGH": "Monsoon approach triggering increased demand for perishables.",
+                    "MEDIUM": "Demand is rising. Review fast-moving inventory positions.",
+                    "LOW": "Demand stable. Continue normal fulfillment planning.",
+                }[demand_level]
+                st.session_state.dashboard_outputs["demand"] = {
+                    "level": demand_level,
+                    "confidence": confidence,
+                    "recommendation": recommendation,
+                }
+                set_global_status("ACTIVE" if demand_level != "HIGH" else "ACTIVE", st.session_state.global_metrics["scenario"], 6)
             output = st.session_state.dashboard_outputs.get("demand", {"level": "MEDIUM", "confidence": 88, "recommendation": "Monsoon approaching."})
             st.markdown(
                 f"{badge_html(output['level'], status_kind(output['level']))}<div style='height:0.6rem'></div>"
@@ -169,21 +170,20 @@ def render_page() -> None:
         for name, details in STORE_DATA.items():
             st.caption(f"{name}: Inventory {details['inventory']} | Load {details['load']}% | Distance {details['distance']} km")
         if st.button("Assign Node", use_container_width=True, key="assign_node_btn"):
-            with st.spinner("Assigning optimal node..."):
-                payload = {
-                    "store_load": [{"store": store, "load": details["load"]} for store, details in STORE_DATA.items()],
-                    "distance": {store: details["distance"] for store, details in STORE_DATA.items()},
-                    "inventory": {store: details["inventory"] for store, details in STORE_DATA.items()},
-                }
-                result = api_post("/allocate-store", payload)
-                store = result["result"]["selected_store"]
-                selected = STORE_DATA.get(store, STORE_DATA["Store A"])
-                status = "Optimal" if selected["load"] < 70 else "Stress" if selected["load"] < 90 else "Capacity"
-                st.session_state.dashboard_outputs["allocation"] = {
-                    "store": store,
-                    "eta": f"{selected['distance'] + 8} min",
-                    "status": status,
-                }
+            payload = {
+                "store_load": [{"store": store, "load": details["load"]} for store, details in STORE_DATA.items()],
+                "distance": {store: details["distance"] for store, details in STORE_DATA.items()},
+                "inventory": {store: details["inventory"] for store, details in STORE_DATA.items()},
+            }
+            result = api_post("/allocate-store", payload)
+            store = result["result"]["selected_store"]
+            selected = STORE_DATA.get(store, STORE_DATA["Store A"])
+            status = "Optimal" if selected["load"] < 70 else "Stress" if selected["load"] < 90 else "Capacity"
+            st.session_state.dashboard_outputs["allocation"] = {
+                "store": store,
+                "eta": f"{selected['distance'] + 8} min",
+                "status": status,
+            }
         output = st.session_state.dashboard_outputs.get("allocation", {"store": "Store A", "eta": "12 min", "status": "Optimal"})
         st.markdown(
             f"{badge_html(output['status'], status_kind(output['status']))}<div style='height:0.6rem'></div>"
@@ -199,17 +199,16 @@ def render_page() -> None:
         stock_b = st.number_input("Store B stock", min_value=0, value=450, key="balance_stock_b")
         threshold = st.number_input("Safety threshold", min_value=0, value=600, key="balance_threshold")
         if st.button("Balance Stocks", use_container_width=True, key="balance_stocks_btn"):
-            with st.spinner("Calculating transfer requirement..."):
-                result = api_post("/balance-inventory", {"stock_levels": {"Store A": stock_a, "Store B": stock_b}})
-                actions = result["result"]["actions"]
-                if actions and abs(stock_a - stock_b) >= threshold:
-                    action = actions[0]
-                    st.session_state.dashboard_outputs["inventory"] = {
-                        "transfer": action["units"],
-                        "direction": f"{action['from_store'][-1]} -> {action['to_store'][-1]}",
-                    }
-                else:
-                    st.session_state.dashboard_outputs["inventory"] = {"transfer": 0, "direction": "Balanced"}
+            result = api_post("/balance-inventory", {"stock_levels": {"Store A": stock_a, "Store B": stock_b}})
+            actions = result["result"]["actions"]
+            if actions and abs(stock_a - stock_b) >= threshold:
+                action = actions[0]
+                st.session_state.dashboard_outputs["inventory"] = {
+                    "transfer": action["units"],
+                    "direction": f"{action['from_store'][-1]} -> {action['to_store'][-1]}",
+                }
+            else:
+                st.session_state.dashboard_outputs["inventory"] = {"transfer": 0, "direction": "Balanced"}
         output = st.session_state.dashboard_outputs.get("inventory", {"transfer": 200, "direction": "B -> A"})
         st.markdown(
             f"<div style='font-size:2rem;font-weight:800;color:#0B2E33'>{output['transfer']}</div>"
@@ -225,17 +224,16 @@ def render_page() -> None:
         pick_frequency = st.number_input("Pick Frequency", min_value=0, value=128, key="pick_frequency_dashboard")
         current_position = st.text_input("Current Position", value="C-09", key="current_position_dashboard")
         if st.button("Run Optimizer", use_container_width=True, key="run_optimizer_btn"):
-            with st.spinner("Optimizing shelf placement..."):
-                result = api_post(
-                    "/optimize-layout",
-                    {"picking_frequency": {product_group: pick_frequency, "Snacks": 72, "Bakery": 48}},
-                )
-                new_position = result["result"]["new_shelf_positions"][0]["new_position"]
-                efficiency_gain = min(32, 10 + pick_frequency // 8)
-                st.session_state.dashboard_outputs["layout"] = {
-                    "position": new_position.replace("Shelf", "").strip() or "B-12",
-                    "gain": efficiency_gain,
-                }
+            result = api_post(
+                "/optimize-layout",
+                {"picking_frequency": {product_group: pick_frequency, "Snacks": 72, "Bakery": 48}},
+            )
+            new_position = result["result"]["new_shelf_positions"][0]["new_position"]
+            efficiency_gain = min(32, 10 + pick_frequency // 8)
+            st.session_state.dashboard_outputs["layout"] = {
+                "position": new_position.replace("Shelf", "").strip() or "B-12",
+                "gain": efficiency_gain,
+            }
         output = st.session_state.dashboard_outputs.get("layout", {"position": "B-12", "gain": 18})
         st.markdown(
             f"<strong>Recommendation:</strong> Move to {output['position']}<br><span style='color:rgba(11,46,51,0.68)'>+{output['gain']}% efficiency</span>",
@@ -249,13 +247,12 @@ def render_page() -> None:
         backlog_orders = st.number_input("Backlog Orders", min_value=0, value=42, key="backlog_orders_dashboard")
         capacity_cap = st.number_input("Capacity Cap", min_value=0, value=500, key="capacity_cap_dashboard")
         if st.button("Status Check", use_container_width=True, key="status_check_btn"):
-            with st.spinner("Checking overflow capacity..."):
-                result = api_post("/activate-capacity", {"demand": backlog_orders, "capacity": capacity_cap})
-                activated = result["result"]["activate_ghost_store"]
-                st.session_state.dashboard_outputs["capacity"] = {
-                    "status": "Activated" if activated else "Not Activated",
-                    "coverage": result["result"]["reason"],
-                }
+            result = api_post("/activate-capacity", {"demand": backlog_orders, "capacity": capacity_cap})
+            activated = result["result"]["activate_ghost_store"]
+            st.session_state.dashboard_outputs["capacity"] = {
+                "status": "Activated" if activated else "Not Activated",
+                "coverage": result["result"]["reason"],
+            }
         output = st.session_state.dashboard_outputs.get("capacity", {"status": "Not Activated", "coverage": "Current capacity can absorb the backlog."})
         st.markdown(
             f"{badge_html(output['status'], status_kind(output['status']))}<div style='height:0.6rem'></div>"
@@ -270,13 +267,12 @@ def render_page() -> None:
         expected_manifest = st.text_input("Expected Manifest", value="SHA-256: 7B-92-A1", key="expected_manifest_dashboard")
         scanned_manifest = st.text_input("Scanned Manifest", value="SHA-256: 7B-92-A1", key="scanned_manifest_dashboard")
         if st.button("Validate Integrity", use_container_width=True, key="validate_integrity_btn"):
-            with st.spinner("Validating manifest integrity..."):
-                result = api_post("/check-error", {"expected_item": expected_manifest, "scanned_item": scanned_manifest})
-                ok = result["result"]["status"] == "success"
-                st.session_state.dashboard_outputs["error"] = {
-                    "status": "Manifest Match" if ok else "Mismatch Alert",
-                    "message": result["result"]["message"],
-                }
+            result = api_post("/check-error", {"expected_item": expected_manifest, "scanned_item": scanned_manifest})
+            ok = result["result"]["status"] == "success"
+            st.session_state.dashboard_outputs["error"] = {
+                "status": "Manifest Match" if ok else "Mismatch Alert",
+                "message": result["result"]["message"],
+            }
         output = st.session_state.dashboard_outputs.get("error", {"status": "Manifest Match", "message": "No mismatch detected."})
         st.markdown(
             f"{badge_html(output['status'], status_kind(output['status']))}<div style='height:0.6rem'></div>"

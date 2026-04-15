@@ -106,6 +106,23 @@ def apply_page_config(page_title: str) -> None:
             color: white;
             margin-bottom: 1rem;
         }}
+        .header-meta-chip {{
+            color: white;
+            font-size: 0.76rem;
+            font-weight: 700;
+            text-align: center;
+            white-space: nowrap;
+            padding-top: 0.4rem;
+        }}
+        .feedback-banner {{
+            background: rgba(22, 163, 74, 0.16);
+            border: 1px solid rgba(22, 163, 74, 0.35);
+            color: #0B2E33;
+            border-radius: 16px;
+            padding: 0.95rem 1rem;
+            margin: 0.6rem 0 1rem 0;
+            font-weight: 700;
+        }}
         .malo-brand {{
             font-size: 1.45rem;
             font-weight: 800;
