@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🤖 MALO
+# MALO
 ### Multi-Agent Autonomous Logistics Orchestrator
 
 *A quick-commerce logistics simulation powered by six rule-based AI agents*
@@ -223,11 +223,5 @@ All endpoints accept and return JSON.
 Built with ❤️ at **Vibeathon 2026**
 
 - **Anup Kumar Jena** — [GitHub](https://github.com/AKJenaX)
-- Teammate 1
-- Teammate 2
-
----
-
-## 📄 License
-
-This project is open source under the [MIT License](LICENSE).
+- **Kamal Nath Mallick** — [GitHub](https://github.com/kamal577223)
+- **Shaik Irfan** — [GitHub](https://github.com/Irfan052)
